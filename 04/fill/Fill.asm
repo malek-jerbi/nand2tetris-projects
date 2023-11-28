@@ -11,4 +11,46 @@
 // 'white' in every pixel;
 // the screen should remain fully clear as long as no key is pressed.
 
-//// Replace this comment with your code.
+
+@color    // declare color variable
+M=0      // by default is white
+
+(LOOP)
+
+  @SCREEN
+  D=A
+  @address
+  M=D     
+
+  @KBD  
+  D=M
+  @BLACK
+  D;JGT   
+  
+  @color
+  M=0    
+  @CHANGE_COLOR
+  0;JMP    
+  
+  (BLACK)
+    @color
+    M=-1    
+
+  (CHANGE_COLOR)
+    @color
+    D=M
+    @address
+    A=M         
+    M=D       
+    
+    @address
+    M=M+1
+    D=M
+        
+    @24576
+    D=D-A
+    @CHANGE_COLOR
+    D;JLT
+
+@LOOP
+0;JMP 
