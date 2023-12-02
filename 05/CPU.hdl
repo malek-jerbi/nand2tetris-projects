@@ -32,5 +32,42 @@ CHIP CPU {
         pc[15];          // Address of next instruction
 
     PARTS:
-    //// Replace this comment with your code.
+    //// check instruction opcode. if 0 we can feed "1" into the load of the A register
+    Not(in=instruction[15], out=loadAregister1);
+    
+    And(a=instruction[15], b=instruction[3], out=loadAregister2);
+    Or(a=loadAregister1, b=loadAregister2, out=loadAregister);
+
+    Or(a=isCWriteA, b=loadAregister1, out=loadAregisterx);
+
+    And(a=instruction[15], b=instruction[5], out=isCWriteA);
+    Mux16(a=instruction, b=outOfALU, sel=isCWriteA, out=outToAregsiter); // c1 dependson if the recent instruction was a c instruction (using the ALU ouput..)
+    ARegister(in=outToAregsiter, load=loadAregisterx, out=outOfAregister); //this output should handle the M
+
+    Mux16(a=outOfAregister, b=inM, sel=instruction[12], out=outToALU);
+
+    And(a=instruction[15], b=instruction[4], out=loadDregister); 
+    DRegister(in=outOfALU, load=loadDregister, out=outOfDregister);
+    
+    ALU(x=outOfDregister, y=outToALU, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=outOfALU, zr=zr, ng=ng);
+    Or16(a=outOfALU, b=outOfALU, out=outM); //dummy to ouput
+
+    And(a=instruction[15], b=instruction[3], out=writeM);
+    Or16(a=outOfAregister, b=outOfAregister, out[0..14]=addressM);
+
+    Not(in=ng, out=isNonNeg);
+    Not(in=zr, out=isNonZero);
+    And(a=isNonNeg, b=isNonZero, out=isPositive); 
+
+    
+    And(a=isPositive, b=instruction[0], out=JGT);
+    And(a=zr, b=instruction[1], out=JEQ);
+    And(a=ng, b=instruction[2], out=JLT);
+        
+    Or(a=JEQ, b=JLT, out=JLE);
+    Or(a=JLE, b=JGT, out=jumpToA);                  
+    And(a=instruction[15], b=jumpToA, out=loadPC);   
+    Not(in=loadPC, out=PCinc);
+    PC(in=outOfAregister, inc=true, load=loadPC, reset=reset, out[0..14]=pc);
+
 }
